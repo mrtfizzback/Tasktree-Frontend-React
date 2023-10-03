@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Tree } from 'antd';
+import { Tree,  Button, Space  } from 'antd';
 import { useState } from 'react';
 import axios from 'axios';
 import type { DataNode, TreeProps } from 'antd/es/tree';
@@ -113,6 +113,9 @@ const App = () => {
         item.children = item.children || [];
         // where to insert. New item was inserted to the start of the array in this example, but can be anywhere
         item.children.unshift(dragObj);
+
+        // If not dropped into the gap, don't make any changes
+      return;
       });
     } else if (
       ((info.node.children || []).length > 0 && // Has children
@@ -141,38 +144,91 @@ const App = () => {
     }
 
     let apiUrl;
-    if (!info.dropToGap && (info.node.children || []).length === 0 || dropPosition === -1 || info.node.pos.split('-').length <= 2 
-    && info.node.dragOverGapBottom ) {
-      apiUrl = `http://localhost:9090/task/assignparent/${dragKey}/0`;
-  } else {
-      apiUrl = `http://localhost:9090/task/assignparent/${dragKey}/${dropKey}`;
+
+
+  
+  const getPosPathArray = (infoNodePos) => {
+     const stringArray = infoNodePos.split("-");
+     const posArray = stringArray.map(item => parseInt(item));
+     //const parentPosition = posArray.pop();
+     console.log("POSITION OF PARENT NODE: ", JSON.stringify(posArray));
+     return posArray;
   }
 
-/*   if (info.dropToGap && info.node.pos.split('-').length === 1) {
-    apiUrl = `http://localhost:9090/task/assignparent/${dragKey}/0`;
-} else if (!info.dropToGap) {
-    apiUrl = `http://localhost:9090/task/assignparent/${dragKey}/0`;
-} else {
-    apiUrl = `http://localhost:9090/task/assignparent/${dragKey}/${dropKey}`;
-} */
+  const posPathArray = getPosPathArray(info.node.pos);
+  console.log("posPathArray : ", posPathArray);
+
+  const getParentNodeKey = (arr) => {
+    const parentPathArray = arr.slice(0,-1);
+    console.log("parentPathArray: ", parentPathArray)
+    let currentNode = treeState[parentPathArray[1]];
+    console.log("Current Node ", currentNode);
+    
+    const getChildNodes = (node)=>{
+      console.log("Children ARRAY", node.children)
+      return node.children;
+    } 
+    
+
+    for(let i=1;i<parentPathArray.length-1;i++)
+     {
+        currentNode = getChildNodes(currentNode)[parentPathArray[i]];
+        console.log(currentNode);
+        console.log("CurrentTask: ", currentNode.title);
+        console.log("current Key: ", currentNode.key);
+        
+    }
+    console.log("FINAL currentNode", currentNode)
+    console.log("FINAL key", currentNode.key)
+    return currentNode.key;
+}
   
 
-    
+
+    if(posPathArray.length <=2 && !info.node.dragOver){
+      const root = posPathArray[0];
+      console.log("ROOT CONDITION")
+      apiUrl = `http://localhost:9090/task/assignparent/${dragKey}/${root}`;
+    }else if(info.node.dragOverGapBottom && posPathArray.length >2){
+      console.log("Entrou na condition dragOverGapBottom")
+      console.log("posPathArray dentro da condition: ", posPathArray)
+      const theKey= getParentNodeKey(posPathArray);
+      
+      //const infoNodeKey = getParentNodeKey(nodePos);
+      
+      apiUrl = `http://localhost:9090/task/assignparent/${dragKey}/${theKey}`;
+    } else {
+      apiUrl = `http://localhost:9090/task/assignparent/${dragKey}/${dropKey}`;
+    }
+  
+
+  
   
     try {
       const response = await axios.put(apiUrl);
       console.log(response.data);  // For debugging; can remove after verifying everything works
       setTreeState(data);  // Update the tree state
-    } catch (error) {
+      console.log("This is the TREE " , JSON.stringify(treeState, null, 2));
+        } catch (error) {
       console.error("Error assigning parent task:", error);
     }
   };
 
 
 
+
+
+
+
+
+
+
   
   return (
-    <div> {treeState.length > 0 &&( 
+    <div> 
+      <h1>My Project</h1>
+    
+    {treeState.length > 0 &&( 
       <Tree 
       showLine
       //defaultExpandedKeys={['0-0-0']}
