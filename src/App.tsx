@@ -3,6 +3,8 @@ import { Tree,  Button, Space  } from 'antd';
 import { useState } from 'react';
 import axios from 'axios';
 import type { DataNode, TreeProps } from 'antd/es/tree';
+import { Modal, Form, Input, Select } from 'antd';
+
 
 
 /* const someTreeData = [
@@ -23,10 +25,7 @@ const App = () => {
 
 
   const[treeState, setTreeState]= useState<DataNode[]>([]);
-  useEffect(() => {
-    
-
-    const fetchTasks = async () => {
+     const fetchTasks = async () => {
       try {
         const response = await axios.get("http://localhost:9090/task/tasks"); // Add await here
         const tasks = response.data;
@@ -60,8 +59,15 @@ const App = () => {
         console.error("Error fetching tasks:", error);
       }
     };
+ 
+  useEffect(() => {
+    
+
+    // fetchTasks can not loop twice over task ids, 
+    //so I need to seperate the tasks that are children of other tasks
+
   
-    fetchTasks(); // This invokes the function
+    fetchTasks(); 
   }, []);
 
   const [gData, setGData] = useState(defaultData);
@@ -146,7 +152,7 @@ const App = () => {
     let apiUrl;
 
 
-  
+  //Path array taken from info.node.pos
   const getPosPathArray = (infoNodePos) => {
      const stringArray = infoNodePos.split("-");
      const posArray = stringArray.map(item => parseInt(item));
@@ -158,6 +164,7 @@ const App = () => {
   const posPathArray = getPosPathArray(info.node.pos);
   console.log("posPathArray : ", posPathArray);
 
+  // Function to use only for the condition: dragOverGapBottom is true
   const getParentNodeKey = (arr) => {
     const parentPathArray = arr.slice(0,-1);
     console.log("parentPathArray: ", parentPathArray)
@@ -190,12 +197,9 @@ const App = () => {
       console.log("ROOT CONDITION")
       apiUrl = `http://localhost:9090/task/assignparent/${dragKey}/${root}`;
     }else if(info.node.dragOverGapBottom && posPathArray.length >2){
-      console.log("Entrou na condition dragOverGapBottom")
+      console.log("Entered the condition dragOverGapBottom")
       console.log("posPathArray dentro da condition: ", posPathArray)
       const theKey= getParentNodeKey(posPathArray);
-      
-      //const infoNodeKey = getParentNodeKey(nodePos);
-      
       apiUrl = `http://localhost:9090/task/assignparent/${dragKey}/${theKey}`;
     } else {
       apiUrl = `http://localhost:9090/task/assignparent/${dragKey}/${dropKey}`;
@@ -207,12 +211,43 @@ const App = () => {
     try {
       const response = await axios.put(apiUrl);
       console.log(response.data);  // For debugging; can remove after verifying everything works
+      fetchTasks(); 
       setTreeState(data);  // Update the tree state
       console.log("This is the TREE " , JSON.stringify(treeState, null, 2));
         } catch (error) {
       console.error("Error assigning parent task:", error);
     }
   };
+
+  // Form handler function and state
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const openModal = () => setIsModalVisible(true);
+  const closeModal = () => setIsModalVisible(false);
+
+  const [form] = Form.useForm();
+  const handleFormSubmit = async () => {
+    try {
+      const values = await form.validateFields();
+      console.log('Form values:', values);
+  
+      const response = await axios.post('http://localhost:9090/task/newtask', {
+        title: values.title,
+        taskDescription: values.description,
+        taskType: values.type
+      });
+      fetchTasks(); 
+      console.log("AXIOS RESPONSE: ", response)
+      console.log("AXIOS RESPONSE.DATA: ", response.data)
+      if (response.status ==200) {
+        console.log('Task created successfully!');
+      } else {
+        console.error('Error from the server with STATUS: ', response.status || 'No error message provided by server');
+      }
+    } catch (error) {
+      console.error('Failed to submit new item form:', error);
+    }
+  };
+  
 
 
 
@@ -227,6 +262,51 @@ const App = () => {
   return (
     <div> 
       <h1>My Project</h1>
+              <Button style={{ marginBottom: '20px' }} type="primary" onClick={() => setIsModalVisible(true)}>New Task</Button>
+        <Modal
+          title="Add New Task"
+          open={isModalVisible}
+          onOk={() => {
+            handleFormSubmit();
+            // Logic to submit the form, then close the modal
+            setIsModalVisible(false);
+          }}
+          onCancel={() => setIsModalVisible(false)}
+        >
+          <Form form={form}>
+            <Form.Item
+              label="Task Title"
+              name="title"
+            >
+              <Input placeholder="Enter task title" />
+            </Form.Item>
+            <Form.Item
+              label="Task Description"
+              name="description"
+            >
+              <Input.TextArea placeholder="Enter task description" />
+            </Form.Item>
+            <Form.Item
+              label="Task Type"
+              name="type"
+            >
+              <Select placeholder="Choose task type">
+                <Select.Option value="folder">Folder</Select.Option>
+                <Select.Option value="task">Task</Select.Option>
+              </Select>
+            </Form.Item>
+            <Form.Item
+              label="Task Manager"
+              name="manager"
+            >
+              <Select placeholder="Assign item manager">
+                <Select.Option value="7">John Doe</Select.Option>
+                <Select.Option value="8">Jane Smith</Select.Option>
+                <Select.Option value="9">Robert Johnson</Select.Option>
+              </Select>
+            </Form.Item>
+          </Form>
+        </Modal>
     
     {treeState.length > 0 &&( 
       <Tree 
