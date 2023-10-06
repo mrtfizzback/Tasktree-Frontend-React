@@ -25,6 +25,8 @@ const App = () => {
 
 
   const[treeState, setTreeState]= useState<DataNode[]>([]);
+  const[users, setUsers]= useState([]);
+
      const fetchTasks = async () => {
       try {
         const response = await axios.get("http://localhost:9090/task/tasks"); // Add await here
@@ -43,6 +45,14 @@ const App = () => {
         return {
           title: task.title,
           key: task.id.toString(),
+          taskDescription: task.taskDescription ,
+          taskType:task.tasktype,
+          taskManager: task.taskManager,
+          creationDate: task.creationDate,
+          lastEditedDate:task.lastEditedDate,
+          isCompleted: task.isCompleted,
+          taskOrder: task.taskOrder,
+          taskLevel: task.taskLevel,
           children: task.childTasks ? task.childTasks.map(transformTask) : []
         };
       };
@@ -59,6 +69,28 @@ const App = () => {
         console.error("Error fetching tasks:", error);
       }
     };
+
+    const fetchUsers = async () => {
+      try{
+        const response = await axios.get("http://localhost:9090/user/users");
+        console.log("AXIOS USER RESPONSE: ", response)
+        const fetchedUsers = response.data;
+        const transformedUsers = fetchedUsers.map(user => ({
+        id: user.id,
+        username: user.username,
+        name: user.name,
+        email: user.email,
+        password: user.password,
+        userType: user.userType,
+        managingTasks: [],
+        partOfTeamTasks: []
+        }));
+        setUsers(fetchedUsers); 
+        console.log("USER LIST:", fetchedUsers)
+        }catch(error){
+        console.error("Error fetching Users", error)
+      }
+    }
  
   useEffect(() => {
     
@@ -68,6 +100,7 @@ const App = () => {
 
   
     fetchTasks(); 
+    fetchUsers();
   }, []);
 
   const [gData, setGData] = useState(defaultData);
@@ -77,6 +110,7 @@ const App = () => {
     // expandedKeys, set it when controlled is needed
     // setExpandedKeys(info.expandedKeys)
   };
+
 
   
 
@@ -226,28 +260,37 @@ const App = () => {
 
   const [form] = Form.useForm();
   const handleFormSubmit = async () => {
+    
     try {
       const values = await form.validateFields();
       console.log('Form values:', values);
   
       const response = await axios.post('http://localhost:9090/task/newtask', {
         title: values.title,
-        taskDescription: values.description,
-        taskType: values.type
-      });
-      fetchTasks(); 
-      console.log("AXIOS RESPONSE: ", response)
+        taskDescription: values.taskDescription,
+        tasktype: values.taskType,
+        manager: values.manager
+        /* .filter(task => !childTaskIds.has(task.id)) */  
+      }
+      );
+      console.log("AXIOS.POST RESPONSE: ", response)
       console.log("AXIOS RESPONSE.DATA: ", response.data)
       if (response.status ==200) {
         console.log('Task created successfully!');
+  
       } else {
         console.error('Error from the server with STATUS: ', response.status || 'No error message provided by server');
       }
     } catch (error) {
       console.error('Failed to submit new item form:', error);
     }
+    fetchTasks();
   };
   
+
+  // Task Panel
+  const [selectedTask, setSelectedTask] = useState<DataNode>();
+  const [isPanelOpen, setIsPanelOpen] = useState(false); 
 
 
 
@@ -282,52 +325,75 @@ const App = () => {
             </Form.Item>
             <Form.Item
               label="Task Description"
-              name="description"
+              name="taskDescription"
             >
               <Input.TextArea placeholder="Enter task description" />
             </Form.Item>
             <Form.Item
               label="Task Type"
-              name="type"
+              name="taskType"
             >
               <Select placeholder="Choose task type">
-                <Select.Option value="folder">Folder</Select.Option>
-                <Select.Option value="task">Task</Select.Option>
+                <Select.Option value="FOLDER">Folder</Select.Option>
+                <Select.Option value="TASK">Task</Select.Option>
               </Select>
             </Form.Item>
             <Form.Item
               label="Task Manager"
               name="manager"
             >
-              <Select placeholder="Assign item manager">
-                <Select.Option value="7">John Doe</Select.Option>
-                <Select.Option value="8">Jane Smith</Select.Option>
-                <Select.Option value="9">Robert Johnson</Select.Option>
-              </Select>
+                  <Select placeholder="Assign item manager">
+                    {users.map(user => (
+                      <Select.Option key={user.id} value={user.id}>{user.username}</Select.Option>
+                    ))}
+                  </Select>
             </Form.Item>
           </Form>
         </Modal>
     
+        <div style={{ display: "flex" }}>
     {treeState.length > 0 &&( 
-      <Tree 
-      showLine
-      //defaultExpandedKeys={['0-0-0']}
-      blockNode
-      //showIcon={false}
+      <div style={{ flex: 1 }}>
+          <Tree 
+          showLine
+          //defaultExpandedKeys={['0-0-0']}
+          blockNode
+          //showIcon={false}
 
-      className="draggable-tree"
-      //defaultExpandedKeys={expandedKeys}
-      draggable
-      onDragEnter={onDragEnter}
-      onDrop={onDrop}
-      treeData={treeState}
-      
+          className="draggable-tree"
+          //defaultExpandedKeys={expandedKeys}
+          draggable
+          onDragEnter={onDragEnter}
+          onDrop={onDrop}
+          treeData={treeState}
+          onSelect={(selectedKeys, info) => {
+            setSelectedTask(info.node);
+            setIsPanelOpen(true);
+            console.log("Panel is open: ",isPanelOpen );
+            console.log("Selected task:", selectedTask);
+          }}
+            />
+            {/* Conditionally render the side panel based on selectedTask */}
+        {selectedTask && (
+          <div style={{ flex: 1, borderLeft: '1px solid #ccc', padding: '10px' }}>
+            <h2>{selectedTask.taskDescription}</h2>
+            <p><strong>Description:</strong> {selectedTask.taskDescription}</p> {/* Assumed the property is named `description` */}
+            <p><strong>Type:</strong> {selectedTask.taskType}</p> {/* Assumed the property is named `type` */}
+            <p><strong>Manager:</strong> {selectedTask.taskManager}</p>
+            {/* Add other fields as needed */}
+          </div>
+        )}
 
-    />)}
+            
+        </div>
+        
     
 
+    )}
 
-    </div>
+          </div>
+        </div>
+
   );
 };
 
