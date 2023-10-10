@@ -4,6 +4,13 @@ import { useState } from 'react';
 import axios from 'axios';
 import type { DataNode, TreeProps } from 'antd/es/tree';
 import { Modal, Form, Input, Select } from 'antd';
+import { ResizableBox  } from 'react-resizable';
+import 'react-resizable/css/styles.css';
+
+
+
+
+
 
 
 
@@ -20,18 +27,23 @@ import { Modal, Form, Input, Select } from 'antd';
   },
 ] */
 
+
 const defaultData: DataNode[] = [];
 const App = () => {
 
 
+
+
   const[treeState, setTreeState]= useState<DataNode[]>([]);
   const[users, setUsers]= useState([]);
+
 
      const fetchTasks = async () => {
       try {
         const response = await axios.get("http://localhost:9090/task/tasks"); // Add await here
         const tasks = response.data;
               // Step 1: Create a Set of all child task IDs
+      console.log("aXIOS GET fetchtasks:", tasks)
       const childTaskIds = new Set();
       tasks.forEach(task => {
         if (task.childTasks) {
@@ -41,13 +53,14 @@ const App = () => {
         }
       });
 
+
       const transformTask = (task) => {
         return {
           title: task.title,
           key: task.id.toString(),
           taskDescription: task.taskDescription ,
-          taskType:task.tasktype,
-          taskManager: task.taskManager,
+          taskType:task.taskType !=null? task.taskType: "null",
+          taskManager: task.taskManager != null ? task.taskManager.username : "No Manager assigned",
           creationDate: task.creationDate,
           lastEditedDate:task.lastEditedDate,
           isCompleted: task.isCompleted,
@@ -57,18 +70,21 @@ const App = () => {
         };
       };
 
+
       // Step 2: Map only tasks that are not in the Set of child task IDs
       const transformedData = tasks
         .filter(task => !childTaskIds.has(task.id))
         .map(transformTask);
-      
+     
       setTreeState(transformedData);
+      console.log("TREESTaTE", treeState);
 
 
       } catch (error) {
         console.error("Error fetching tasks:", error);
       }
     };
+
 
     const fetchUsers = async () => {
       try{
@@ -85,7 +101,7 @@ const App = () => {
         managingTasks: [],
         partOfTeamTasks: []
         }));
-        setUsers(fetchedUsers); 
+        setUsers(fetchedUsers);
         console.log("USER LIST:", fetchedUsers)
         }catch(error){
         console.error("Error fetching Users", error)
@@ -93,15 +109,18 @@ const App = () => {
     }
  
   useEffect(() => {
-    
+   
 
-    // fetchTasks can not loop twice over task ids, 
+
+    // fetchTasks can not loop twice over task ids,
     //so I need to seperate the tasks that are children of other tasks
 
-  
-    fetchTasks(); 
+
+ 
+    fetchTasks();
     fetchUsers();
   }, []);
+
 
   const [gData, setGData] = useState(defaultData);
   // onDragEnter and onDragDrop functions
@@ -112,7 +131,10 @@ const App = () => {
   };
 
 
-  
+
+
+ 
+
 
   const onDrop: TreeProps['onDrop'] = async (info) => {
     console.log(info);
@@ -122,7 +144,10 @@ const App = () => {
     const dropPosition = info.dropPosition - Number(dropPos[dropPos.length - 1]);
 
 
-    
+
+
+   
+
 
     const loop = (
       data: DataNode[],
@@ -140,6 +165,7 @@ const App = () => {
     };
     const data = [...treeState];
 
+
     // Find dragObject
     let dragObj: DataNode;
     loop(data, dragKey, (item, index, arr) => {
@@ -147,12 +173,14 @@ const App = () => {
       dragObj = item;
     });
 
+
     if (!info.dropToGap) {
       // Drop on the content
       loop(data, dropKey, (item) => {
         item.children = item.children || [];
         // where to insert. New item was inserted to the start of the array in this example, but can be anywhere
         item.children.unshift(dragObj);
+
 
         // If not dropped into the gap, don't make any changes
       return;
@@ -183,7 +211,10 @@ const App = () => {
       }
     }
 
+
     let apiUrl;
+
+
 
 
   //Path array taken from info.node.pos
@@ -195,8 +226,10 @@ const App = () => {
      return posArray;
   }
 
+
   const posPathArray = getPosPathArray(info.node.pos);
   console.log("posPathArray : ", posPathArray);
+
 
   // Function to use only for the condition: dragOverGapBottom is true
   const getParentNodeKey = (arr) => {
@@ -204,12 +237,13 @@ const App = () => {
     console.log("parentPathArray: ", parentPathArray)
     let currentNode = treeState[parentPathArray[1]];
     console.log("Current Node ", currentNode);
-    
+   
     const getChildNodes = (node)=>{
       console.log("Children ARRAY", node.children)
       return node.children;
-    } 
-    
+    }
+   
+
 
     for(let i=1;i<parentPathArray.length-1;i++)
      {
@@ -217,13 +251,15 @@ const App = () => {
         console.log(currentNode);
         console.log("CurrentTask: ", currentNode.title);
         console.log("current Key: ", currentNode.key);
-        
+       
     }
     console.log("FINAL currentNode", currentNode)
     console.log("FINAL key", currentNode.key)
     return currentNode.key;
 }
-  
+ 
+
+
 
 
     if(posPathArray.length <=2 && !info.node.dragOver){
@@ -238,14 +274,15 @@ const App = () => {
     } else {
       apiUrl = `http://localhost:9090/task/assignparent/${dragKey}/${dropKey}`;
     }
-  
+ 
 
-  
-  
+
+ 
+ 
     try {
       const response = await axios.put(apiUrl);
       console.log(response.data);  // For debugging; can remove after verifying everything works
-      fetchTasks(); 
+      fetchTasks();
       setTreeState(data);  // Update the tree state
       console.log("This is the TREE " , JSON.stringify(treeState, null, 2));
         } catch (error) {
@@ -253,31 +290,33 @@ const App = () => {
     }
   };
 
+
   // Form handler function and state
   const [isModalVisible, setIsModalVisible] = useState(false);
   const openModal = () => setIsModalVisible(true);
   const closeModal = () => setIsModalVisible(false);
 
+
   const [form] = Form.useForm();
   const handleFormSubmit = async () => {
-    
+   
     try {
       const values = await form.validateFields();
       console.log('Form values:', values);
-  
-      const response = await axios.post('http://localhost:9090/task/newtask', {
+ 
+      const response = await axios.post(`http://localhost:9090/task/newtask/${values.manager}`, {
         title: values.title,
         taskDescription: values.taskDescription,
-        tasktype: values.taskType,
+        taskType: values.taskType,
         manager: values.manager
         /* .filter(task => !childTaskIds.has(task.id)) */  
       }
       );
-      console.log("AXIOS.POST RESPONSE: ", response)
-      console.log("AXIOS RESPONSE.DATA: ", response.data)
+      /* console.log("AXIOS.POST RESPONSE: ", response)
+      console.log("AXIOS RESPONSE.DATA: ", response.data) */
       if (response.status ==200) {
         console.log('Task created successfully!');
-  
+ 
       } else {
         console.error('Error from the server with STATUS: ', response.status || 'No error message provided by server');
       }
@@ -286,11 +325,12 @@ const App = () => {
     }
     fetchTasks();
   };
-  
+ 
+
 
   // Task Panel
   const [selectedTask, setSelectedTask] = useState<DataNode>();
-  const [isPanelOpen, setIsPanelOpen] = useState(false); 
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
 
 
 
@@ -301,100 +341,90 @@ const App = () => {
 
 
 
-  
+
+
+
+
+
+
+
+
+
+
+ 
   return (
-    <div> 
-      <h1>My Project</h1>
-              <Button style={{ marginBottom: '20px' }} type="primary" onClick={() => setIsModalVisible(true)}>New Task</Button>
-        <Modal
-          title="Add New Task"
-          open={isModalVisible}
-          onOk={() => {
-            handleFormSubmit();
-            // Logic to submit the form, then close the modal
-            setIsModalVisible(false);
-          }}
-          onCancel={() => setIsModalVisible(false)}
-        >
-          <Form form={form}>
-            <Form.Item
-              label="Task Title"
-              name="title"
+   
+    <div style={{ display: 'flex', height: '100vh' }}>
+        {/* Left Container */}
+        <div style={{ flex: 1, padding: '20px', overflowY: 'auto' }}>
+            <h1>My Project</h1>
+            <Button style={{ marginBottom: '20px' }} type="primary" onClick={() => setIsModalVisible(true)}>New Task</Button>
+           
+            <Modal
+                title="Add New Task"
+                open={isModalVisible}
+                onOk={() => {
+                    handleFormSubmit();
+                    setIsModalVisible(false);
+                }}
+                onCancel={() => setIsModalVisible(false)}
             >
-              <Input placeholder="Enter task title" />
-            </Form.Item>
-            <Form.Item
-              label="Task Description"
-              name="taskDescription"
-            >
-              <Input.TextArea placeholder="Enter task description" />
-            </Form.Item>
-            <Form.Item
-              label="Task Type"
-              name="taskType"
-            >
-              <Select placeholder="Choose task type">
-                <Select.Option value="FOLDER">Folder</Select.Option>
-                <Select.Option value="TASK">Task</Select.Option>
-              </Select>
-            </Form.Item>
-            <Form.Item
-              label="Task Manager"
-              name="manager"
-            >
-                  <Select placeholder="Assign item manager">
-                    {users.map(user => (
-                      <Select.Option key={user.id} value={user.id}>{user.username}</Select.Option>
-                    ))}
-                  </Select>
-            </Form.Item>
-          </Form>
-        </Modal>
-    
-        <div style={{ display: "flex" }}>
-    {treeState.length > 0 &&( 
-      <div style={{ flex: 1 }}>
-          <Tree 
-          showLine
-          //defaultExpandedKeys={['0-0-0']}
-          blockNode
-          //showIcon={false}
+                <Form form={form}>
+                    <Form.Item label="Task Title" name="title">
+                        <Input placeholder="Enter task title" />
+                    </Form.Item>
+                    <Form.Item label="Task Description" name="taskDescription">
+                        <Input.TextArea placeholder="Enter task description" />
+                    </Form.Item>
+                    <Form.Item label="Task Type" name="taskType">
+                        <Select placeholder="Choose task type">
+                            <Select.Option value="FOLDER">Folder</Select.Option>
+                            <Select.Option value="TASK">Task</Select.Option>
+                        </Select>
+                    </Form.Item>
+                    <Form.Item label="Task Manager" name="manager">
+                        <Select placeholder="Assign item manager">
+                            {users.map(user => (
+                                <Select.Option key={user.id} value={user.id}>{user.username}</Select.Option>
+                            ))}
+                        </Select>
+                    </Form.Item>
+                </Form>
+            </Modal>
 
-          className="draggable-tree"
-          //defaultExpandedKeys={expandedKeys}
-          draggable
-          onDragEnter={onDragEnter}
-          onDrop={onDrop}
-          treeData={treeState}
-          onSelect={(selectedKeys, info) => {
-            setSelectedTask(info.node);
-            setIsPanelOpen(true);
-            console.log("Panel is open: ",isPanelOpen );
-            console.log("Selected task:", selectedTask);
-          }}
-            />
-            {/* Conditionally render the side panel based on selectedTask */}
-        {selectedTask && (
-          <div style={{ flex: 1, borderLeft: '1px solid #ccc', padding: '10px' }}>
-            <h2>{selectedTask.taskDescription}</h2>
-            <p><strong>Description:</strong> {selectedTask.taskDescription}</p> {/* Assumed the property is named `description` */}
-            <p><strong>Type:</strong> {selectedTask.taskType}</p> {/* Assumed the property is named `type` */}
-            <p><strong>Manager:</strong> {selectedTask.taskManager}</p>
-            {/* Add other fields as needed */}
-          </div>
+
+            {treeState.length > 0 && (
+                <Tree
+                    showLine
+                    draggable
+                    onDragEnter={onDragEnter}
+                    onDrop={onDrop}
+                    treeData={treeState}
+                    onSelect={(selectedKeys, info) => {
+                        setSelectedTask(info.node);
+                        setIsPanelOpen(true);
+                    }}
+                />
+            )}
+        </div>
+
+
+        {/* Right Side Panel */}
+        {isPanelOpen && selectedTask && (
+
+            <div style={{ flex: 1, borderLeft: '1px solid #ccc', padding: '20px', overflowY: 'auto' }}>
+                <h2>{selectedTask.title}</h2>
+                <p><strong>Description:</strong> {selectedTask.taskDescription}</p>
+                <p><strong>Type:</strong> {selectedTask.taskType}</p>
+                <p><strong>Manager:</strong> {selectedTask.taskManager} </p>
+                {/* Map other fields as needed */}
+                <Button onClick={() => setIsPanelOpen(false)}>Close Panel</Button>
+            </div>
+     
         )}
-
-            
-        </div>
-        
-    
-
-    )}
-
-          </div>
-        </div>
-
-  );
+    </div>
+);
 };
+
 
 export default App;
