@@ -1,42 +1,127 @@
+
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  width: 100%;
+  
+  /* padding-left: 20px;
+  padding-right: 20px; */
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+
+/* .ant-menu-horizontal {
+  width: 100%;
+  box-shadow: 0 2px 4px 0 rgba(0,0,0,.2);
+  background-color:lightblue;
+  height: 3rem;
+} */
+
+.ant-menu-horizontal {
+/*   display: flex;
+  
+  align-items: center;
+  width: 100%;
+  box-shadow: 0 2px 4px 0 rgba(0,0,0,.2);
+  background-color: lightblue;
+  height: 3rem;
+  padding: 0 20px;
+  position: sticky;
+ */
+  display: flex;
+  justify-content: space-between;  /* This ensures that the logo and user info are on opposite ends */
+  align-items: center;
+  width: 100%;
+  box-shadow: 0 2px 4px 0 rgba(0,0,0,.2);
+  background-color: lightblue;
+  height: 3rem;
+  padding: 0 20px;
+  position: sticky;
+ 
+  
+
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.ant-menu-horizontal h2 {
+  
+  border-bottom:4px;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+
+.left-content-wrapper {
+  max-width: 60%;  
+  width: 100%;
+  padding-left: 30px;
+  overflow: auto;
 }
 
-.card {
-  padding: 2em;
+.tasktree-logo{
+  color: black;
+  
 }
 
-.read-the-docs {
-  color: #888;
+
+
+.main-flex-container {
+    flex: 0;
+}
+
+.login-button {
+  
+  border-bottom: 4px;
+  padding-left: 20px;
+
+  
+}
+
+.logo{
+  /* padding-left: 20px;
+  font-size: large; */
+  padding: 0;
+  font-size: 1.6rem;
+  
+}
+
+.app-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+
+.user-info {
+ /*  display: flex;
+  align-items: center; */
+
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  float: right;
+}
+
+.ant-menu-horizontal, .logo, .tasktree-logo, .user-info, .login-button {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.header{
+ /*  box-shadow: 0 2px 4px 0 rgba(0,0,0,.2);
+  background-color: lightblue;
+  height: 3rem;
+  padding: 0 20px;
+  position: sticky; */
+
+  display: flex;
+  justify-content: space-between; /* This will push logo to left and user-info to right */
+  align-items: center;
+  width: 100%;
+  box-shadow: 0 2px 4px 0 rgba(0,0,0,.2);
+  background-color: lightblue;
+  height: 3rem;
+  padding: 0 20px;
+  position: sticky;
+ 
+}
+
+.userName {
+  font-size: 1.2rem;
+  color: rgb(4, 83, 46);
 }

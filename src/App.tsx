@@ -1,11 +1,37 @@
-import React, { useEffect } from 'react';
+import React, { useState,useEffect } from 'react';
 import { Tree,  Button, Space  } from 'antd';
-import { useState } from 'react';
 import axios from 'axios';
 import type { DataNode, TreeProps } from 'antd/es/tree';
-import { Modal, Form, Input, Select } from 'antd';
+import { Modal, Form, Input, Select,Breadcrumb, Layout, Menu, theme } from 'antd';
 import { ResizableBox  } from 'react-resizable';
-import 'react-resizable/css/styles.css';
+/* import 'react-resizable/css/styles.css'; */
+ /* import "bootstrap/dist/css/bootstrap.min.css"; */
+import "./App.css";
+import { BrowserRouter ,Routes, Route, Link, Router } from "react-router-dom";
+import TesteComponent from './components/TesteComponent.jsx'
+import { store } from './reduxStore/store';
+import { Provider, useSelector } from 'react-redux';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faHome } from '@fortawesome/free-solid-svg-icons';
+
+
+const { Header, Content, Footer, Sider } = Layout;
+
+
+
+
+
+
+import AuthService from "./services/auth.service";
+
+//import AuthService from "./services/auth.service";
+
+import Login from "./components/Login";
+import Login2 from "./components/Login2.tsx";
+import Register from "./components/Register";
+import Profile from "./components/Profile";
+
+//import EventBus from "./common/EventBus";
 
 
 
@@ -36,6 +62,20 @@ const App = () => {
 
   const[treeState, setTreeState]= useState<DataNode[]>([]);
   const[users, setUsers]= useState([]);
+  /* const[currentUser, setCurrentUser] = useState(undefined);
+
+  useEffect(() => {
+    const user = AuthService.getCurrentUser();
+
+    if (user) {
+      setCurrentUser(user);
+    }
+  }, []);
+
+  const logOut = () => {
+    AuthService.logout();
+  }; */
+
 
 
      const fetchTasks = async () => {
@@ -332,31 +372,89 @@ const App = () => {
   const [selectedTask, setSelectedTask] = useState<DataNode>();
   const [isPanelOpen, setIsPanelOpen] = useState(false);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  // Current logged in User on ReduxStore
+  const user = useSelector(state => state.user);
+  console.log("-----REDUX STORE USER: ", user)
 
 
 
 
  
   return (
-   
+    <Provider store={store}>
+    
+    <div className='app-wrapper'>
+    <Header className="header" style={{ display: 'flex', alignItems: 'center' }}>
+      <Link className="tasktree-logo" to="/home">
+        <h3 className='logo'>Tasktree</h3>
+      </Link>
+      <div className='user-info'>
+    { 
+      user.accessToken !=null
+      ? (
+        <>
+          <h2 className='userName'>{user.userName}</h2>
+          <Button onClick={AuthService.logout}>Logout</Button>
+        </>
+      ) 
+      : (
+        <>
+        <Link className='login-button' to="/login">
+          <Button>Login | Register</Button>
+        </Link>
+      
+      </>
+      )
+    }
+  </div>
+        {/* <div className="demo-logo" />
+        <Menu theme="dark" mode="horizontal" defaultSelectedKeys={['2']} items={items1} /> */}
+
+    </Header>
+    {/*   <div>
+      
+      <Menu className='ant-menu-horizontal'>
+  <div className="logo">
+  <Link className="tasktree-logo" to="/home">
+    <FontAwesomeIcon icon={faHome} />
+    <h3>Tasktree</h3>
+</Link>
+  </div>
+  <div className='user-info'>
+    { 
+      user.accessToken 
+      ? (
+        <>
+          <h2>{user.userName}</h2>
+          <Button onClick={AuthService.logout}>Logout</Button>
+        </>
+      ) 
+      : (
+        <Link className='login-button' to="/login">
+          <Button>Login | Register</Button>
+        </Link>
+      )
+    }
+  </div>
+</Menu>
+      </div> */}
+
+    <Routes>
+           {/*  <Route path="/login" element={<TesteComponent />} /> */}
+            <Route path="/login2" element={<TesteComponent />} />
+            <Route path="/login" element={<Login2 />} />
+            <Route path="/home" element={
+                <>
+      
+      
+      
+
     <div style={{ display: 'flex', height: '100vh' }}>
+
+    
+
         {/* Left Container */}
-        <div style={{ flex: 1, padding: '20px', overflowY: 'auto' }}>
+        <div  className="left-content-wrapper">
             <h1>My Project</h1>
             <Button style={{ marginBottom: '20px' }} type="primary" onClick={() => setIsModalVisible(true)}>New Task</Button>
            
@@ -385,16 +483,17 @@ const App = () => {
                     <Form.Item label="Task Manager" name="manager">
                         <Select placeholder="Assign item manager">
                             {users.map(user => (
-                                <Select.Option key={user.id} value={user.id}>{user.username}</Select.Option>
+                                <Select.Option key={user.id} value={user.id}>{user.name}</Select.Option>
                             ))}
                         </Select>
                     </Form.Item>
                 </Form>
             </Modal>
 
-
+            
             {treeState.length > 0 && (
-                <Tree
+              
+                <Tree  
                     showLine
                     draggable
                     onDragEnter={onDragEnter}
@@ -405,26 +504,39 @@ const App = () => {
                         setIsPanelOpen(true);
                     }}
                 />
+                
             )}
+            
         </div>
-
+        
 
         {/* Right Side Panel */}
-        {isPanelOpen && selectedTask && (
-
-            <div style={{ flex: 1, borderLeft: '1px solid #ccc', padding: '20px', overflowY: 'auto' }}>
-                <h2>{selectedTask.title}</h2>
-                <p><strong>Description:</strong> {selectedTask.taskDescription}</p>
-                <p><strong>Type:</strong> {selectedTask.taskType}</p>
-                <p><strong>Manager:</strong> {selectedTask.taskManager} </p>
-                {/* Map other fields as needed */}
-                <Button onClick={() => setIsPanelOpen(false)}>Close Panel</Button>
-            </div>
-     
-        )}
+        <div className="right-panel" style={{ borderLeft: '2px solid #ccc', padding: '40px'}}>
+            {selectedTask ? (
+                <>
+                    <h2>{selectedTask.title}</h2>
+                    <p><strong>Description:</strong> {selectedTask.taskDescription}</p>
+                    <p><strong>Type:</strong> {selectedTask.taskType}</p>
+                    <p><strong>Manager:</strong> {selectedTask.taskManager} </p>
+                    {/* Map other fields as needed */}
+                    <Button onClick={() => setIsPanelOpen(false)}>Close Panel</Button>
+                </>
+            ) : (
+                <p>Select a task to see its details.</p>
+            )}
+        </div>
+        
     </div>
-);
+          </>
+        } />
+        </Routes>
+    </div>    
+    </Provider>);
+
+
 };
+
+
 
 
 export default App;
