@@ -413,6 +413,15 @@ const App = () => {
     fetchUsers();
   };
  
+  const deleteTask =async (taskid) => {
+    try {
+      const response = await axios.delete(`http://localhost:9090/task/${taskid}`);
+      console.log(response);
+      fetchTasks();
+    } catch (error) {
+      console.log("DELETE TASK ERROR!!")
+    }
+  }
 
 
   // Task Panel
@@ -581,7 +590,7 @@ const App = () => {
                     <p><strong>Type:</strong> {selectedTask.taskType}</p>
                     <p><strong>Manager:</strong> {selectedTask.taskManager} </p>
                     {/* Map other fields as needed */}
-                    {/* {roles == "ROLE_ADMIN" &&(<Button onClick={deleteTask}>Delete Task</Button>)} */}
+                    {roles == "ROLE_ADMIN" &&(<Button onClick={() => deleteTask(selectedTask.key)}>Delete Task</Button>)}
                 </>
             ) : (
                 <p>Select a task to see its details.</p>
