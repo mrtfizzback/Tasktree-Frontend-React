@@ -1,8 +1,10 @@
 import axios from "axios";
 import { store } from '../reduxStore/store';
 import { loginSuccess, logout as logoutAction } from '../reduxStore/userSlice';
+import { useSelector } from 'react-redux';
 
 const API_URL = "http://localhost:9090/auth/";
+const API_URL_TASKS = "http://localhost:9090/task/";
 
 const register = (userName, password, email, roles) => {
   return axios.post(API_URL + "addNewUser", {
@@ -35,21 +37,29 @@ const login = (userName, password) => {
 };
 
 
+const getAllTasks = (token) => {  
+  return axios.get(API_URL_TASKS + "tasks", {
+    headers: {
+      Authorization: 'Bearer ' + token
+    }
+  });
+}
+
+
+
+
 const logout = () => {
   localStorage.removeItem("user");
   store.dispatch(logoutAction());
 };
 
-const getCurrentUser = () => {
-  const user = localStorage.getItem("user");
-  return user ? JSON.parse(user) : null;
-};
+
 
 const AuthService = {
   register,
   login,
   logout,
-  getCurrentUser,
+  getAllTasks
 };
 
 export default AuthService;

@@ -46,10 +46,15 @@
 
 
 .left-content-wrapper {
-  max-width: 60%;  
+/*   max-width: 60%;  
   width: 100%;
   padding-left: 30px;
+  overflow: auto; */
+
+  width: 50%;  /* Changed from max-width: 60% and width: 100% */
+  padding-left: 30px;
   overflow: auto;
+  
 }
 
 .tasktree-logo{
@@ -124,4 +129,11 @@
 .userName {
   font-size: 1.2rem;
   color: rgb(4, 83, 46);
+}
+
+.right-panel{
+  width: 50%;  
+  border-left: 2px solid #ccc;
+  padding: 40px;
+  box-shadow: 0 2px 4px 0 rgba(0,0,0,.2);
 }

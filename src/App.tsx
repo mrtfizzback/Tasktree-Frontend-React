@@ -13,26 +13,13 @@ import { store } from './reduxStore/store';
 import { Provider, useSelector } from 'react-redux';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHome } from '@fortawesome/free-solid-svg-icons';
-
-
-const { Header, Content, Footer, Sider } = Layout;
-
-
-
-
-
-
 import AuthService from "./services/auth.service";
-
-//import AuthService from "./services/auth.service";
-
 import Login from "./components/Login";
 import Login2 from "./components/Login2.tsx";
 import Register from "./components/Register";
 import Profile from "./components/Profile";
 
-//import EventBus from "./common/EventBus";
-
+const { Header, Content, Footer, Sider } = Layout;
 
 
 
@@ -58,7 +45,12 @@ const defaultData: DataNode[] = [];
 const App = () => {
 
 
-
+  // Current logged in User on ReduxStore
+  const user = useSelector(state => state.user);
+  const token = user.accessToken;
+  const roles = user.roles;
+  console.log("-----REDUX STORE USER: ", user)
+  console.log("TOKEN: ", token)
 
   const[treeState, setTreeState]= useState<DataNode[]>([]);
   const[users, setUsers]= useState([]);
@@ -75,23 +67,39 @@ const App = () => {
   const logOut = () => {
     AuthService.logout();
   }; */
+    
+//logout and reset useStates
+  const logoutAndReset = () => {
+    AuthService.logout();
+    setUsers([]); 
+    setTreeState([]); 
+  };
 
 
 
-     const fetchTasks = async () => {
-      try {
-        const response = await axios.get("http://localhost:9090/task/tasks"); // Add await here
-        const tasks = response.data;
-              // Step 1: Create a Set of all child task IDs
-      console.log("aXIOS GET fetchtasks:", tasks)
-      const childTaskIds = new Set();
-      tasks.forEach(task => {
-        if (task.childTasks) {
-          task.childTasks.forEach(childTask => {
-            childTaskIds.add(childTask.id);
+        const fetchTasks = async () => {
+          try {
+            /* const response = await axios.get("http://localhost:9090/task/tasks"); */
+
+             const response = await axios.get("http://localhost:9090/task/tasks", {
+              headers: {
+                Authorization: 'Bearer ' + token
+              }
+            }); 
+            console.log("AXIOS TASKS request", response);
+            const tasks = response.data;
+                  // Step 1: Create a Set of all child task IDs
+          console.log("aXIOS GET fetchtasks:", tasks)
+          const childTaskIds = new Set();
+          tasks.forEach(task => {
+            if (task.childTasks) {
+              task.childTasks.forEach(childTask => {
+                childTaskIds.add(childTask.id);
+              });
+            }
           });
-        }
-      });
+
+      
 
 
       const transformTask = (task) => {
@@ -100,7 +108,7 @@ const App = () => {
           key: task.id.toString(),
           taskDescription: task.taskDescription ,
           taskType:task.taskType !=null? task.taskType: "null",
-          taskManager: task.taskManager != null ? task.taskManager.username : "No Manager assigned",
+          taskManager: task.taskManager != null ? task.taskManager.userName : "No Manager assigned",
           creationDate: task.creationDate,
           lastEditedDate:task.lastEditedDate,
           isCompleted: task.isCompleted,
@@ -127,13 +135,30 @@ const App = () => {
 
 
     const fetchUsers = async () => {
+      
       try{
-        const response = await axios.get("http://localhost:9090/user/users");
-        console.log("AXIOS USER RESPONSE: ", response)
+        /* const response = await axios.get("http://localhost:9090/user/users") */
+
+/*         const response = await axios.get("http://localhost:9090/user/users",  {
+          headers: {
+            Authorization: 'Bearer ' + token
+          }
+        }); */
+        
+        const response = await axios.get("http://localhost:9090/auth/allusers",  {
+          headers: {
+            Authorization: 'Bearer ' + token
+          }
+        });
+        
+
+       
+        console.log("---TOKEN success fetchusers: ", token)
+        console.log("AXIOS USERRSSSSS: ", response)
         const fetchedUsers = response.data;
         const transformedUsers = fetchedUsers.map(user => ({
         id: user.id,
-        username: user.username,
+        userName: user.userName,
         name: user.name,
         email: user.email,
         password: user.password,
@@ -144,22 +169,19 @@ const App = () => {
         setUsers(fetchedUsers);
         console.log("USER LIST:", fetchedUsers)
         }catch(error){
-        console.error("Error fetching Users", error)
+        console.error("NOOO USSSERRSSSS", error)
+        console.log("---TOKEN error fetchusers: ", token)
       }
     }
  
   useEffect(() => {
-   
-
-
     // fetchTasks can not loop twice over task ids,
     //so I need to seperate the tasks that are children of other tasks
-
-
- 
-    fetchTasks();
-    fetchUsers();
-  }, []);
+    if (token) {
+      fetchTasks();
+      fetchUsers();
+  }
+  }, [token]);
 
 
   const [gData, setGData] = useState(defaultData);
@@ -306,6 +328,8 @@ const App = () => {
       const root = posPathArray[0];
       console.log("ROOT CONDITION")
       apiUrl = `http://localhost:9090/task/assignparent/${dragKey}/${root}`;
+
+
     }else if(info.node.dragOverGapBottom && posPathArray.length >2){
       console.log("Entered the condition dragOverGapBottom")
       console.log("posPathArray dentro da condition: ", posPathArray)
@@ -320,7 +344,14 @@ const App = () => {
  
  
     try {
+/*       const response = await axios.put(apiUrl, {
+        headers: {
+          Authorization: 'Bearer ' + token
+        }
+      }) */
       const response = await axios.put(apiUrl);
+
+
       console.log(response.data);  // For debugging; can remove after verifying everything works
       fetchTasks();
       setTreeState(data);  // Update the tree state
@@ -338,20 +369,35 @@ const App = () => {
 
 
   const [form] = Form.useForm();
-  const handleFormSubmit = async () => {
+  const handleFormSubmitNewTask = async () => {
    
     try {
       const values = await form.validateFields();
       console.log('Form values:', values);
  
-      const response = await axios.post(`http://localhost:9090/task/newtask/${values.manager}`, {
-        title: values.title,
-        taskDescription: values.taskDescription,
-        taskType: values.taskType,
-        manager: values.manager
-        /* .filter(task => !childTaskIds.has(task.id)) */  
-      }
-      );
+/*       const response = await axios.post(`http://localhost:9090/task/newtask`, {
+            title: values.title,
+            taskDescription: values.taskDescription,
+            taskType: values.taskType,
+            manager: values.manager
+        }, {
+            headers: {
+                Authorization: 'Bearer ' + token
+            }
+        }); */
+
+        const response = await axios.post(`http://localhost:9090/task/newtask`, {
+          title: values.title,
+          taskDescription: values.taskDescription,
+          taskType: values.taskType,
+          taskManager: values.manager
+      }, {
+        headers: {
+          Authorization: 'Bearer ' + token
+        }
+      });
+      console.log("NEW TASK RESPONSE: ",response)
+      
       /* console.log("AXIOS.POST RESPONSE: ", response)
       console.log("AXIOS RESPONSE.DATA: ", response.data) */
       if (response.status ==200) {
@@ -364,6 +410,7 @@ const App = () => {
       console.error('Failed to submit new item form:', error);
     }
     fetchTasks();
+    fetchUsers();
   };
  
 
@@ -371,16 +418,13 @@ const App = () => {
   // Task Panel
   const [selectedTask, setSelectedTask] = useState<DataNode>();
   const [isPanelOpen, setIsPanelOpen] = useState(false);
-
-  // Current logged in User on ReduxStore
-  const user = useSelector(state => state.user);
-  console.log("-----REDUX STORE USER: ", user)
+  
 
 
-
-
+  
  
   return (
+    
     <Provider store={store}>
     
     <div className='app-wrapper'>
@@ -394,7 +438,7 @@ const App = () => {
       ? (
         <>
           <h2 className='userName'>{user.userName}</h2>
-          <Button onClick={AuthService.logout}>Logout</Button>
+          <Button onClick={logoutAndReset}>Logout</Button>
         </>
       ) 
       : (
@@ -456,13 +500,13 @@ const App = () => {
         {/* Left Container */}
         <div  className="left-content-wrapper">
             <h1>My Project</h1>
-            <Button style={{ marginBottom: '20px' }} type="primary" onClick={() => setIsModalVisible(true)}>New Task</Button>
-           
+           {roles=="ROLE_ADMIN" &&(<Button style={{ marginBottom: '20px' }} type="primary" onClick={() => setIsModalVisible(true)}>New Task</Button>)}
+           {/* { <Button style={{ marginBottom: '20px' }} type="primary" onClick={() => setIsModalVisible(true)}>New Task</Button>}  */}
             <Modal
                 title="Add New Task"
                 open={isModalVisible}
                 onOk={() => {
-                    handleFormSubmit();
+                    handleFormSubmitNewTask();
                     setIsModalVisible(false);
                 }}
                 onCancel={() => setIsModalVisible(false)}
@@ -483,7 +527,7 @@ const App = () => {
                     <Form.Item label="Task Manager" name="manager">
                         <Select placeholder="Assign item manager">
                             {users.map(user => (
-                                <Select.Option key={user.id} value={user.id}>{user.name}</Select.Option>
+                                <Select.Option key={user.id} value={user.userName}>{user.userName}</Select.Option>
                             ))}
                         </Select>
                     </Form.Item>
@@ -491,21 +535,39 @@ const App = () => {
             </Modal>
 
             
-            {treeState.length > 0 && (
-              
-                <Tree  
-                    showLine
-                    draggable
-                    onDragEnter={onDragEnter}
-                    onDrop={onDrop}
-                    treeData={treeState}
-                    onSelect={(selectedKeys, info) => {
-                        setSelectedTask(info.node);
-                        setIsPanelOpen(true);
-                    }}
-                />
-                
-            )}
+            <div>
+    {treeState.length > 0 && (
+        user.roles === "ROLE_ADMIN" ? 
+            <Tree  
+                showLine
+                draggable
+                onDragEnter={onDragEnter}
+                onDrop={onDrop}
+                treeData={treeState}
+                onSelect={(selectedKeys, info) => {
+                    setSelectedTask(info.node);
+                    setIsPanelOpen(true);
+                }}
+            />
+        :
+            <Tree  
+                showLine
+                onDragEnter={onDragEnter}
+                onDrop={onDrop}
+                treeData={treeState}
+                onSelect={(selectedKeys, info) => {
+                    setSelectedTask(info.node);
+                    setIsPanelOpen(true);
+                }}
+            />
+    )}
+</div>
+
+
+
+
+
+
             
         </div>
         
@@ -519,7 +581,7 @@ const App = () => {
                     <p><strong>Type:</strong> {selectedTask.taskType}</p>
                     <p><strong>Manager:</strong> {selectedTask.taskManager} </p>
                     {/* Map other fields as needed */}
-                    <Button onClick={() => setIsPanelOpen(false)}>Close Panel</Button>
+                    {/* {roles == "ROLE_ADMIN" &&(<Button onClick={deleteTask}>Delete Task</Button>)} */}
                 </>
             ) : (
                 <p>Select a task to see its details.</p>
