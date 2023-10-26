@@ -19,15 +19,13 @@ const getUserBoard = () => {
   return axios.get(API_URL + "admin", { headers: authHeader() });
 }; */
 
-const getUser = () =>{
-    return axios.get(API_URL + "getUser", { headers:authHeader()});
-}
+const getUser = () => {
+  return axios.get(API_URL + "getUser", { headers: authHeader() });
+};
 
-const getAllUsers = ()=>{
-    return axios.get(API_URL + allusers, {headers:authHeader()})
-}
-
-
+const getAllUsers = () => {
+  return axios.get(API_URL + allusers, { headers: authHeader() });
+};
 
 const UserService = {
   getAllUsers,

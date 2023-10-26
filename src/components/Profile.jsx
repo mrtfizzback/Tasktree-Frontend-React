@@ -5,8 +5,8 @@ const Profile = () => {
   const currentUser = AuthService.getCurrentUser();
 
   return (
-    <div className="container">
-      <header className="jumbotron">
+    <div className='container'>
+      <header className='jumbotron'>
         <h3>
           <strong>{currentUser.userName}</strong> Profile
         </h3>
